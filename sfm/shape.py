@@ -33,8 +33,8 @@ def shrink(X, v):
     s = shrink_vec(s,v)
     return np.dot(U, np.dot(np.diag(s), Vt))
 
-#@profile
-def S_from_Rs(W, Rs, use_method_1 = False, rank = None):
+
+def S_from_Rs_method_1(W, Rs):
     
     # Create block diagonal matrix R
     R = scipy.linalg.block_diag(*Rs[:,:2,:].tolist())
@@ -42,9 +42,15 @@ def S_from_Rs(W, Rs, use_method_1 = False, rank = None):
     # Initialize from method 1.
     S = np.dot(np.linalg.pinv(R), W)
     
-    if use_method_1:
-        return S
+    return S
     
+def S_sharp_from_Rs(W, Rs, init_S_sharp = None):
+    
+    if init_S_sharp == None:
+        init_S_sharp = to_S_sharp(S_from_Rs_method_1(W, Rs))
+        
+    S_sharp = init_S_sharp
+
     # Use the paramaterization in Dai CVPR 2012 and
     # algorithm from 
     # S. Ma, D. Goldfarb, and L. Chen. "Fixed point and bregman iterative 
@@ -54,11 +60,13 @@ def S_from_Rs(W, Rs, use_method_1 = False, rank = None):
     # These values seem to work and be reasonably fast, but were definitely not
     # set in any principled way.
     tau = 1
-    S_sharp = to_S_sharp(S)
     mu_bar = 0.0001
     eta = .5
     mu = 100000
     xtol = 0.0001/tau
+    
+    # Create block diagonal matrix R
+    R = scipy.linalg.block_diag(*Rs[:,:2,:].tolist())
     
     while mu > mu_bar:
         while True:
@@ -75,19 +83,20 @@ def S_from_Rs(W, Rs, use_method_1 = False, rank = None):
         # Update mu.
         mu = max(eta * mu, mu_bar)
     
-    # Possibly project to a low rank matrix.
-    if rank != None:
-        U, s, Vh = np.linalg.svd(S_sharp)
-        U = U[:,:rank]
-        s = np.diag(s[:rank])
-        Vh = Vh[:rank,:]
-        
-        S_sharp = np.dot(U, np.dot(s, Vh))
-        
-    # Convert back to S
-    S = to_S(S_sharp)
+    return S_sharp
+
+def factor_S_sharp_to_C_and_B(S_sharp, rank):
     
-    return S
+    # Factor S_sharp into C B_sharp
+    C, s, B_sharp = np.linalg.svd(S_sharp)
+    s = np.sqrt(s[:rank])
+    C = C[:,:rank] * s[np.newaxis,:] 
+    B_sharp = B_sharp[:rank,:] * s[:,np.newaxis]
+    
+    # Reshape into the B matrix.
+    B = to_S(B_sharp)
+    
+    return C, B
 
 
 def find_linear_basis_for_vech_Q_k(PI_hat):
@@ -236,11 +245,24 @@ def factor(W, n_basis=2, use_method_1 = False):
     # Recover R
     Rs = Rs_from_M_k(M_k)
     
-    # Recover S
-    S = S_from_Rs(W_cent, Rs, use_method_1 = use_method_1, rank = n_basis)
-    
-    # Check residual    
-    scene = Scene(S = S, Rs = Rs, Ts = Ts)
+    if use_method_1:
+        
+        # Recover S
+        S = S_from_Rs_method_1(W_cent, Rs)
+        
+        # Build the scene.
+        scene = Scene(S = S, Rs = Rs, Ts = Ts)
+        
+    else:
+        
+        # Recover S_sharp
+        S_sharp = S_sharp_from_Rs(W_cent, Rs)
+
+        # Factor to C and B matrices.
+        C, B = factor_S_sharp_to_C_and_B(S_sharp, n_basis)
+
+        # Build linear model.
+        scene = model.BasisShapeModel(Rs, Bs = B.reshape(n_basis, 3, B.shape[1]), C=C, Ts=Ts)
 
     return scene
 
