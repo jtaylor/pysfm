@@ -41,6 +41,14 @@ class Scene(object):
         return np.einsum('fij,fjk->fik', self.Rs, self.Ss) + self.Ts[:,:,np.newaxis]
     
     @property
+    def P(self):
+        return self.Ps.reshape(self.n_frames*3, self.n_points)
+    
+    @property
+    def Ws(self):
+        return self.Ps[:,:2]
+    
+    @property
     def W(self):
         return self.Ps[:,:2].reshape(self.n_frames*2, self.n_points)
     
@@ -101,8 +109,8 @@ class BasisShapeModel(Scene):
         
         if C == None:
             C = np.ones((self.n_frames, self.n_basis))
-        
-        assert Ts.ndim == 2 and Ts  .shape[0] == self.n_frames, 'Ts matrix the wrong size %s'.format((str(Ts.shape)))
+
+        assert Ts.ndim == 2 and Ts.shape[0] == self.n_frames, 'Ts matrix the wrong size %s'.format((str(Ts.shape)))
         assert C.ndim == 2 and C.shape == (self.n_frames, self.n_basis), 'C matrix the wrong size'
 
         self.Rs = Rs
@@ -195,6 +203,12 @@ def generate_synthetic_model(n_frames, n_basis, n_points):
     C = np.random.randn(n_frames, n_basis)
 
     return BasisShapeModel(R, Bs, C=C)
+
+def generate_synthetic_rigid_model(n_frames, n_points):
+    
+    m = generate_synthetic_model(n_frames, 1, n_points)
+    m.C[:] = 1
+    return m
 
 def simple_model(n_frames):
     Bs = np.asarray([generate_cube(), generate_cube()]) 
