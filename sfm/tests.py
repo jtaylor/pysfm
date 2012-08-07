@@ -32,9 +32,9 @@ def test_rot_code():
 def test_recover_Gk_no_noise():
     
     # Generate some synthetic data.    
-    n_frames = 20
-    n_basis = 3
-    n_points = 200
+    n_frames = 30
+    n_basis = 2
+    n_points = 15
     gt_model = model.generate_synthetic_model(n_frames, n_basis, n_points)
 
     # Factor the matrix.    
@@ -60,10 +60,12 @@ def test_recover_Gk_no_noise():
 
 def test_shape_no_noise():
     
+    np.random.seed(100)
+    
     # Generate some synthetic data.    
-    n_frames = 40
+    n_frames = 50
     n_basis = 2
-    n_points = 20
+    n_points = 15
     gt_model = model.generate_synthetic_model(n_frames, n_basis, n_points)
     
     W = gt_model.W

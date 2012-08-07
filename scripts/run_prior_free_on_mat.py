@@ -40,6 +40,7 @@ S -= S.mean(axis=-1)[:,np.newaxis]
 
 # Create a scene and get observation matrix W.
 gt = model.Scene(S = S)
+print gt
 W = gt.W
 
 # Factor into a shape model.
