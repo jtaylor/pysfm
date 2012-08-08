@@ -31,6 +31,9 @@ class Scene(object):
         self.Rs = Rs        
         self.Ss = Ss
         self.Ts = Ts
+        
+    def copy(self):
+        return Scene(Ss = self.Ss, Rs = self.Rs, Ts = self.Ts)
 
     @property
     def S(self):
@@ -117,6 +120,9 @@ class BasisShapeModel(Scene):
         self.Bs = Bs
         self.Ts = Ts
         self.C = C
+        
+    def copy(self):
+        return BasisShapeModel(Rs = self.Rs, Bs = self.Bs, C = self.C, Ts = self.Ts)
         
     @property
     def Ss(self):
