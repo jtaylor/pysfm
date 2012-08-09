@@ -173,13 +173,13 @@ def generate_smooth_rotations(n_frames):
 
     # Create directions that circle in a halo around the origin.
     x = np.cos(np.linspace(0, np.pi*2, n_frames))
-    y = np.ones((n_frames,))*.5
-    z = np.sin(np.linspace(0, np.pi*2, n_frames))
+    z = np.ones((n_frames,))*1
+    y = np.sin(np.linspace(0, np.pi*2, n_frames))
 
     # Generate rotations from these directions.    
-    R = generate_rotation_from_optical_axis(np.asarray([x,y,z]).T)
+    Rs = generate_rotation_from_optical_axis(np.asarray([x,y,z]).T)
     
-    return R
+    return Rs
     
 def generate_cube(interval = 0.2):
     
@@ -247,14 +247,22 @@ def visualize_models(models):
     for f in range(n_frames):
         if f == 0:
             for Ps in Pss:
-                lines.append(ax.plot(Ps[f,0], Ps[f,1], Ps[f,2], 'x')[0])
+                lines.append(ax.plot(Ps[f,0], Ps[f,1], Ps[f,2], 'o')[0])
+            ax.set_xlim(-3,3)
+            ax.set_ylim(-3,3)
+            ax.set_zlim(-3,3)
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.set_zlabel('z')
+            
         else:
             for (line, Ps) in zip(lines, Pss):
                 line.set_data([Ps[f,0], Ps[f,1]])
                 line.set_3d_properties(Ps[f,2])
             
         plt.draw()
-        plt.pause(.3)
+        plt.pause(.01)
+        #raw_input()
 
 
 def compare(inf, gt, visualize = True):
@@ -273,10 +281,13 @@ def compare(inf, gt, visualize = True):
     
     # This is the average 3D error rescaled by the scale of the data.
     # I think this is close to what is being used in Dai2012.
-    print 'Scaled 3D error', norm(P_gt - P_inf, axis=1).mean()/sigma
+    err = norm(P_gt - P_inf, axis=1).mean()/sigma
+    print 'Scaled 3D error', err
     
     if visualize:
         visualize_models([gt, inf])
+    
+    return err
 
     
 
